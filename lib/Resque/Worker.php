@@ -71,7 +71,7 @@ class Resque_Worker
 
 		$instances = array();
 		foreach($workers as $workerId) {
-			$instances[] = self::find($workerId);
+			$instances[] = self::find($workerId, false);
 		}
 		return $instances;
 	}
@@ -87,15 +87,16 @@ class Resque_Worker
 		return (bool)Resque::redis()->sismember('workers', $workerId);
 	}
 
-	/**
-	 * Given a worker ID, find it and return an instantiated worker class for it.
-	 *
-	 * @param string $workerId The ID of the worker.
-	 * @return Resque_Worker Instance of the worker. False if the worker does not exist.
-	 */
-	public static function find($workerId)
+    /**
+     * Given a worker ID, find it and return an instantiated worker class for it.
+     *
+     * @param string $workerId The ID of the worker.
+     * @param bool $checkIfExists whether to check if the worker is a member of the workers set or not (in cases that we just got it from the set, we don't want to check again)
+     * @return bool|Resque_Worker Instance of the worker. False if the worker does not exist.
+     */
+	public static function find($workerId, $checkIfExists = true)
 	{
-	  if(!self::exists($workerId) || false === strpos($workerId, ":")) {
+		if (false === strpos($workerId,":") || ($checkIfExists && !self::exists($workerId))) {
 			return false;
 		}
 
