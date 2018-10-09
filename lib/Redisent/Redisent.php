@@ -75,7 +75,17 @@ class Redisent {
         /* Open a Redis connection and execute the command */
         for ($written = 0; $written < strlen($command); $written += $fwrite) {
             $fwrite = fwrite($this->__sock, substr($command, $written));
-            if ($fwrite === FALSE) {
+            if ($fwrite === 0) {
+                // zero is *not* an error, however it is returned
+                // when "broken pipe" error is returned.
+                // so we try one more time and if it still returns 0 or false we
+                // fail the whole write
+                $fwrite = fwrite($this->__sock, substr($command, $written));
+                if (!$fwrite) {
+                    $fwrite = false;
+                }
+            }
+            if ($fwrite === false) {
                 throw new Exception('Failed to write entire command to stream');
             }
         }
