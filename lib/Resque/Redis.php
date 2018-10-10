@@ -92,15 +92,16 @@ class Resque_Redis extends Redisent
 	    }
 	    self::$defaultNamespace = $namespace;
 	}
-	
-	/**
-	 * Magic method to handle all function requests and prefix key based
-	 * operations with the {self::$defaultNamespace} key prefix.
-	 *
-	 * @param string $name The name of the method called.
-	 * @param array $args Array of supplied arguments to the method.
-	 * @return mixed Return value from Resident::call() based on the command.
-	 */
+
+    /**
+     * Magic method to handle all function requests and prefix key based
+     * operations with the {self::$defaultNamespace} key prefix.
+     *
+     * @param string $name The name of the method called.
+     * @param array $args Array of supplied arguments to the method.
+     * @return mixed Return value from Resident::call() based on the command.
+     * @throws Resque_Exception
+     */
 	public function __call($name, $args) {
 		$args = func_get_args();
 		if(in_array($name, $this->keyCommands)) {
@@ -110,7 +111,7 @@ class Resque_Redis extends Redisent
 			return parent::__call($name, $args[1]);
 		}
 		catch(RedisException $e) {
-			return false;
+		    throw new Resque_Exception('Error communicating with Redis: ' . $e->getMessage(), 0, $e);
 		}
 	}
 }

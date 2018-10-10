@@ -109,6 +109,7 @@ class Redisent {
                 }
                 $read = 0;
                 $size = substr($reply, 1);
+                $this->checkReplyBulkSize($size);
                 do {
                     $block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
                     $response .= fread($this->__sock, $block_size);
@@ -126,6 +127,8 @@ class Redisent {
                 for ($i = 0; $i < $count; $i++) {
                     $bulk_head = trim(fgets($this->__sock, 512));
                     $size = substr($bulk_head, 1);
+                    $this->checkReplyBulkSize($size);
+
                     if ($size == '-1') {
                         $response[] = null;
                     }
@@ -156,5 +159,19 @@ class Redisent {
 
     private function formatArgument($arg) {
         return sprintf('$%d%s%s', strlen($arg), CRLF, $arg);
+    }
+
+    /**
+     * Check reply bulk size string validity or throw an exception otherwise
+     * @param $size string Reply bulk size string
+     * @throws RedisException
+     */
+    private function checkReplyBulkSize($size): void
+    {
+        // Since fgets could return false on error, then $size may be a empty string or a boolean false.
+        // This could potentially result in an endless loop in case of connection or some other socket-related problem.
+        if (!is_numeric($size) || (int)$size < -1) {
+            throw new RedisException("Invalid server response: size = {$size}");
+        }
     }
 }
